@@ -4,6 +4,7 @@ const _ = require('lodash');
 const chai = require('chai');
 const sinon = require('sinon');
 const mockery = require('mockery');
+const path = require('path');
 const Serverless = require('serverless');
 const makeFsExtraMock = require('./fs-extra.mock');
 
@@ -104,7 +105,7 @@ describe('validate', () => {
     return module
       .validate()
       .then(() => expect(module.webpackConfig.output).to.eql({
-        path: `${testServicePath}/${testOptionsOut}/service`,
+        path: path.join(testServicePath, testOptionsOut, 'service'),
         filename: 'filename',
       }));
   });
@@ -135,7 +136,7 @@ describe('validate', () => {
         .validate()
         .then(() => expect(module.webpackConfig.output).to.eql({
           libraryTarget: 'commonjs',
-          path: `${testServicePath}/.webpack/service`,
+          path: path.join(testServicePath, '.webpack', 'service'),
           filename: '[name].js',
         }));
     });
@@ -152,7 +153,7 @@ describe('validate', () => {
         .validate()
         .then(() => expect(module.webpackConfig.output).to.eql({
           libraryTarget: 'commonjs',
-          path: `${testServicePath}/.webpack/service`,
+          path: path.join(testServicePath, '.webpack', 'service'),
           filename: '[name].js',
         }));
     });
@@ -166,7 +167,7 @@ describe('validate', () => {
         .validate()
         .then(() => expect(module.webpackConfig.output).to.eql({
           libraryTarget: 'commonjs',
-          path: `${testServicePath}/.webpack/service`,
+          path: path.join(testServicePath, '.webpack', 'service'),
           filename: '[name].js',
         }));
     });
@@ -176,7 +177,7 @@ describe('validate', () => {
     it('should load a webpack config from file if `custom.webpack` is a string', () => {
       const testConfig = 'testconfig';
       const testServicePath = 'testpath';
-      const requiredPath = `${testServicePath}/${testConfig}`;
+      const requiredPath = path.join(testServicePath, testConfig);
       module.serverless.config.servicePath = testServicePath;
       module.serverless.service.custom.webpack = testConfig;
       serverless.utils.fileExistsSync = sinon.stub().returns(true);
@@ -206,7 +207,7 @@ describe('validate', () => {
     it('should load a default file if no custom config is provided', () => {
       const testConfig = 'webpack.config.js';
       const testServicePath = 'testpath';
-      const requiredPath = `${testServicePath}/${testConfig}`;
+      const requiredPath = path.join(testServicePath, testConfig);
       module.serverless.config.servicePath = testServicePath;
       serverless.utils.fileExistsSync = sinon.stub().returns(true);
       const loadedConfig = {
@@ -317,6 +318,18 @@ describe('validate', () => {
         },
       };
 
+      const testFunctionsGoogleConfig = {
+        func1: {
+          handler: 'func1handler',
+          events: [{
+            http: {
+              method: 'get',
+              path: 'func1path',
+            },
+          }],
+        },
+      };
+
       it('should expose all functions if `options.function` is not defined', () => {
         const testOutPath = 'test';
         const testConfig = {
@@ -369,6 +382,33 @@ describe('validate', () => {
 
           expect(lib.entries).to.deep.equal(expectedLibEntries);
           expect(globSyncStub).to.have.been.calledOnce;
+          expect(serverless.cli.log).to.not.have.been.called;
+          return null;
+        });
+      });
+
+      it('should ignore entry points for the Google provider', () => {
+        const testOutPath = 'test';
+        const testFunction = 'func1';
+        const testConfig = {
+          entry: './index.js',
+          target: 'node',
+          output: {
+            path: testOutPath,
+            filename: 'index.js'
+          },
+        };
+        sandbox.stub(module.serverless, 'service.provider.name').value('google');
+        module.serverless.service.custom.webpack = testConfig;
+        module.serverless.service.functions = testFunctionsGoogleConfig;
+        module.options.function = testFunction;
+        globSyncStub.returns([]);
+        return expect(module.validate()).to.be.fulfilled
+        .then(() => {
+          const lib = require('../lib/index');
+
+          expect(lib.entries).to.deep.equal({});
+          expect(globSyncStub).to.not.have.been.called;
           expect(serverless.cli.log).to.not.have.been.called;
           return null;
         });
