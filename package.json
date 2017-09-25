@@ -1,6 +1,6 @@
 {
   "name": "serverless-webpack",
-  "version": "2.1.0",
+  "version": "2.2.2",
   "description": "Serverless plugin to bundle your javascript with Webpack",
   "main": "index.js",
   "author": "Nicola Peduzzi <nicola.peduzzi@elastic-coders.com> (http://elastic-coders.com)",
@@ -31,6 +31,7 @@
     "body-parser": "^1.15.2",
     "express": "^4.14.0",
     "fs-extra": "^0.26.7",
+    "glob": "^7.1.2",
     "lodash": "^4.17.4",
     "npm-programmatic": "0.0.5",
     "ts-node": "^3.2.0"
